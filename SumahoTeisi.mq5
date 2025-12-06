@@ -119,34 +119,49 @@ void CloseAllPositionsAndOrders()
 }
 
 //+------------------------------------------------------------------+
-//| 価格制限による全決済＆EA停止処理                                  |
+//| 価格制限による処理                                                |
 //+------------------------------------------------------------------+
 void ProcessPriceLimitStop(int limitType)
 {
-   string reason = (limitType == 1) ? "上限価格超過" : "下限価格割れ";
+   string reason = (limitType == 1) ? "価格超過" : "価格割れ";
    double limitPrice = (limitType == 1) ? InpUpperPriceLimit : InpLowerPriceLimit;
    double currentPrice = iClose(Symbol(), PERIOD_CURRENT, 0);
 
+   // 動作モードの説明
+   string actionDesc = "";
+   switch(InpPriceLimitAction)
+   {
+      case ACTION_CLOSE_ONLY:        actionDesc = "全決済"; break;
+      case ACTION_CLOSE_AND_DELETE:  actionDesc = "全決済＋注文削除"; break;
+      case ACTION_CLOSE_DELETE_STOP: actionDesc = "全決済＋注文削除＋自動売買停止"; break;
+   }
+
    string subject = "【SumahoTeisi】" + reason;
    string message = "【警告】" + reason + "を検出！ Price=" + DoubleToString(currentPrice, Digits()) +
-                    " Limit=" + DoubleToString(limitPrice, Digits()) + " 全決済してEAを停止します。";
+                    " Limit=" + DoubleToString(limitPrice, Digits()) + " 実行: " + actionDesc;
 
    // 全通知送信（アラート、スマホ、メール）
    SendAllNotifications(subject, message);
 
-   // 全ポジション・オーダー決済
-   CloseAllPositionsAndOrders();
+   // 全ポジション決済（全モードで実行）
+   CloseAllPositions();
+   LogMessage("全ポジション決済完了");
 
-   // EA停止フラグをセット
-   g_eaStopped = true;
-   s_priceLimitTriggered = true;
+   // 待機注文削除（ACTION_CLOSE_AND_DELETE以上）
+   if(InpPriceLimitAction >= ACTION_CLOSE_AND_DELETE)
+   {
+      DeleteAllOrders();
+      LogMessage("待機注文削除完了");
+   }
 
-   // 自動売買をOFF
-   AlgoTradingStatus(false);
-
-   // EAを削除（完全停止）
-   LogMessage("EA停止処理完了。EAをチャートから削除します。");
-   ExpertRemove();
+   // 自動売買をOFF（ACTION_CLOSE_DELETE_STOP）
+   if(InpPriceLimitAction >= ACTION_CLOSE_DELETE_STOP)
+   {
+      AlgoTradingStatus(false);
+      g_eaStopped = true;
+      s_priceLimitTriggered = true;
+      LogMessage("自動売買停止完了");
+   }
 }
 
 //+------------------------------------------------------------------+

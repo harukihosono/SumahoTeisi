@@ -7,10 +7,21 @@
 #property strict
 
 //+------------------------------------------------------------------+
+//| 価格制限時の動作モード                                            |
+//+------------------------------------------------------------------+
+enum ENUM_PRICE_LIMIT_ACTION
+{
+   ACTION_CLOSE_ONLY = 0,           // 全決済のみ
+   ACTION_CLOSE_AND_DELETE = 1,     // 全決済＋注文削除
+   ACTION_CLOSE_DELETE_STOP = 2     // 全決済＋注文削除＋自動売買停止
+};
+
+//+------------------------------------------------------------------+
 //| 入力パラメータ（共通）                                            |
 //+------------------------------------------------------------------+
-input double InpUpperPriceLimit = 0.0;    // 上限価格（0=無効）
-input double InpLowerPriceLimit = 0.0;    // 下限価格（0=無効）
+input double InpUpperPriceLimit = 0.0;    // この価格を超えたら発動（0=無効）
+input double InpLowerPriceLimit = 0.0;    // この価格を下回ったら発動（0=無効）
+input ENUM_PRICE_LIMIT_ACTION InpPriceLimitAction = ACTION_CLOSE_DELETE_STOP; // 価格制限時の動作
 input bool   InpShowPopupMessages = true; // ポップアップメッセージ表示
 input bool   InpPushNotification = false; // スマホ通知（プッシュ通知）
 input bool   InpEmailNotification = false; // メール通知
